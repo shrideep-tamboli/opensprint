@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OpenScript
 
-## Getting Started
+OpenScript is an internal developer automation engine built as a deterministic workflow system.
 
-First, run the development server:
+It is designed to orchestrate developer tasks (issue creation, PR lifecycle, review loops, deployment, etc.) using a structured finite state machine (FSM) instead of ad-hoc scripts or fragile agent chains.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚀 Current Status — Phase 1 Complete
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Phase 1 implements a hardened, production-safe FSM engine using:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Next.js (App Router, Node runtime)
+- TypeScript
+- LangGraph (JavaScript)
+- Zod for schema validation
 
-## Learn More
+The engine currently simulates a full development workflow:
 
-To learn more about Next.js, take a look at the following resources:
+msg_received → issue_created → pr_created → in_review → change_requested → pr_updated → merged → deployed → issue_closed → completed
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+With:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Structured logging
+- Explicit transition validation
+- Review retry control
+- Recursion safety guard
+- Workflow identity tracking
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🧠 Architecture Overview
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+OpenScript separates concerns cleanly:
+
+- **State Layer** → Defines workflow data structure
+- **Transition Layer** → Defines allowed state changes
+- **Node Layer** → Encapsulates execution logic
+- **Engine Layer** → Orchestrates control flow
+- **API Layer** → Triggers workflow execution
+
+This ensures deterministic execution and predictable behavior.
+
+---
+
+## 🛡 Safety Mechanisms
+
+The engine includes:
+
+- Explicit FSM transition validation
+- Business-level retry limits (review cycles)
+- Engine-level recursion guard
+- Structured execution logging
+- Workflow ID tracing
+
+This prevents infinite loops and corrupted transitions.
+
+---
