@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { buildWorkflow } from "@/lib/fsm/engine";
+import { getLogs } from "@/lib/utils/logger";
 import crypto from "crypto";
 
 export const runtime = "nodejs";
@@ -24,5 +25,6 @@ export async function POST() {
   return NextResponse.json({
     workflowId,
     result,
+    logs: getLogs(workflowId),
   });
 }
