@@ -8,6 +8,7 @@ export const StatusValues = [
   "merged",
   "deployed",
   "issue_closed",
+  "close_requested",
   "completed",
 ] as const;
 
@@ -23,6 +24,7 @@ export const AllowedTransitions: Record<Status, Status[]> = {
   merged: ["deployed"],
   deployed: ["issue_closed"],
   issue_closed: ["completed"],
+  close_requested: ["issue_closed"],
   completed: [],
 };
 

@@ -1,6 +1,6 @@
-# OpenScript
+# OpenSprint
 
-OpenScript is an internal developer automation engine built as a deterministic workflow system.
+OpenSprint is an internal developer automation engine built as a deterministic workflow system.
 
 It is designed to orchestrate developer tasks (issue creation, PR lifecycle, review loops, deployment, etc.) using a structured finite state machine (FSM) instead of ad-hoc scripts or fragile agent chains.
 

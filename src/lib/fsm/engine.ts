@@ -23,6 +23,10 @@ const WorkflowState = new StateSchema({
   status: StatusEnum,
   reviewCycles: z.number().default(0),
   stepCount: z.number().default(0),
+  message: z.string(),
+  description: z.string(),
+  repo: z.string(),
+  issueNumber: z.number().optional(),
   startedAt: z.string(),
   endedAt: z.string().optional(),
 });
@@ -49,6 +53,8 @@ function router(state: WorkflowStateType) {
       return "closeIssue";
     case "issue_closed":
       return "complete";
+    case "close_requested":
+      return "closeIssue";
     case "completed":
       return END;
   }

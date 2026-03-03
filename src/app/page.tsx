@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 type WorkflowResult = {
   workflowId: string;
@@ -11,6 +11,7 @@ type WorkflowResult = {
     stepCount: number;
     startedAt: string;
     endedAt?: string;
+    issueNumber?: number;
   };
   logs: Array<{
     level: "info";
@@ -23,11 +24,70 @@ type WorkflowResult = {
   }>;
 };
 
+type LiveEvent =
+  | {
+      kind: "workflow_start";
+      workflowId: string;
+      title: string;
+      description: string;
+      repo: string;
+    }
+  | {
+      kind: "log";
+      level: "info";
+      workflowId: string;
+      node: string;
+      from: string;
+      to: string;
+      step: number;
+      timestamp: string;
+    };
+
 export default function Home() {
   const [data, setData] = useState<WorkflowResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [workflowInput, setWorkflowInput] = useState("");
+  const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
+  const [currentMeta, setCurrentMeta] = useState<{
+    workflowId: string;
+    title: string;
+    description: string;
+    repo: string;
+  } | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
+
+  useEffect(() => {
+    const es = new EventSource("/api/events");
+    eventSourceRef.current = es;
+
+    es.onmessage = (event) => {
+      try {
+        const parsed = JSON.parse(event.data) as LiveEvent;
+        if (parsed.kind === "workflow_start") {
+          setCurrentMeta({
+            workflowId: parsed.workflowId,
+            title: parsed.title,
+            description: parsed.description,
+            repo: parsed.repo,
+          });
+          setLiveEvents([]);
+        } else if (parsed.kind === "log") {
+          setLiveEvents((prev) => [...prev, parsed]);
+        }
+      } catch {
+        // ignore malformed events
+      }
+    };
+
+    es.onerror = () => {
+      es.close();
+    };
+
+    return () => {
+      es.close();
+    };
+  }, []);
 
   const runWorkflow = async () => {
     try {
@@ -65,6 +125,21 @@ export default function Home() {
             Deterministic FSM engine for developer workflow automation.
           </p>
         </div>
+
+        {/* Live Discord-triggered workflow banner */}
+        {currentMeta && (
+          <div className="mb-8 p-4 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900">
+            <h3 className="font-semibold mb-2">🤖 Discord-triggered workflow</h3>
+            <div className="text-sm space-y-1">
+              <div><span className="font-medium">Title:</span> {currentMeta.title}</div>
+              <div><span className="font-medium">Repo:</span> {currentMeta.repo}</div>
+              {currentMeta.description && (
+                <div><span className="font-medium">Description:</span> {currentMeta.description}</div>
+              )}
+              <div className="text-xs text-zinc-500">Workflow ID: {currentMeta.workflowId}</div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column - Controls and Results */}
@@ -121,17 +196,25 @@ export default function Home() {
                   <span className="font-semibold">Started At:</span>{" "}
                   {new Date(data.result.startedAt).toLocaleString()}
                 </div>
+                {data.result.issueNumber && (
+                  <div>
+                    <span className="font-semibold">Issue Number:</span>{" "}
+                    {data.result.issueNumber}
+                  </div>
+                )}
               </div>
             )}
           </div>
 
-          {/* Right Column - Execution Logs */}
+          {/* Right Column - Live Execution Logs */}
           <div>
-            {data && (
+            {(data || liveEvents.length > 0) && (
               <div className="p-6 rounded-lg border border-zinc-200 dark:border-zinc-700 space-y-4 bg-white dark:bg-zinc-900 sticky top-8">
-                <h2 className="text-xl font-semibold">Execution Logs</h2>
+                <h2 className="text-xl font-semibold">
+                  {liveEvents.length > 0 ? "Live Execution Logs" : "Execution Logs"}
+                </h2>
                 
-                {data.logs.length > 0 ? (
+                {(liveEvents.length > 0 ? liveEvents.filter((e) => e.kind === "log") : data?.logs || []).length > 0 ? (
                   <div 
                     className="space-y-2 max-h-96 overflow-y-auto"
                     style={{
@@ -162,7 +245,7 @@ export default function Home() {
                         }
                       }
                     `}</style>
-                    {data.logs.map((log, index) => (
+                    {(liveEvents.length > 0 ? liveEvents.filter((e) => e.kind === "log") : data!.logs).map((log, index) => (
                       <div
                         key={index}
                         className="p-3 rounded bg-zinc-100 dark:bg-zinc-800 text-sm font-mono"

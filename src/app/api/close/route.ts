@@ -9,14 +9,13 @@ export async function POST(request: Request) {
   const app = buildWorkflow();
 
   const body = (await request.json()) as {
-    title?: string;
-    description?: string;
     repo?: string;
+    issueNumber?: number;
   };
 
-  if (typeof body?.title !== "string" || typeof body?.repo !== "string") {
+  if (typeof body?.repo !== "string" || typeof body?.issueNumber !== "number") {
     return NextResponse.json(
-      { error: "Invalid body. Expected { title, description, repo }." },
+      { error: "Invalid body. Expected { repo: string, issueNumber: number }." },
       { status: 400 }
     );
   }
@@ -24,18 +23,20 @@ export async function POST(request: Request) {
   const workflowId = crypto.randomUUID();
   const startedAt = new Date().toISOString();
 
+  // Initialize FSM at the state that leads to closeIssue
   const result = await app.invoke(
     {
       workflowId,
-      status: "msg_received",
+      status: "close_requested", // set to the state that routes to closeIssue
       reviewCycles: 0,
       stepCount: 0,
-      message: body.title,
-      description: typeof body.description === "string" ? body.description : "",
+      message: "",
+      description: "",
       repo: body.repo,
+      issueNumber: body.issueNumber,
       startedAt,
     },
-    { recursionLimit: 25 } // 🔒 Recursion Guard
+    { recursionLimit: 25 }
   );
 
   return NextResponse.json({
